@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LARSGPT Chat</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; }
+    #userInput { width: 80%; }
+    button { width: 18%; }
+  </style>
+</head>
+<body>
+  <h2>LARSGPT Chat</h2>
+  <div id="chat"></div>
+  <input type="text" id="userInput" placeholder="Schreibe etwas..."/>
+  <button onclick="sendMessage()">Senden</button>
+
+  <script>
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value;
+      if (!text) return;
+
+      const chatDiv = document.getElementById("chat");
+      chatDiv.innerHTML += `<b>You:</b> ${text}<br>`;
+      input.value = "";
+
+      try {
+        const response = await fetch("http://localhost:5000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: text })
+        });
+        const data = await response.json();
+        chatDiv.innerHTML += `<b>LARSGPT:</b> ${data.reply}<br>`;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      } catch (err) {
+        chatDiv.innerHTML += `<b>Error:</b> ${err}<br>`;
+      }
+    }
+  </script>
+</body>
+</html>
