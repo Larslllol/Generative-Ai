@@ -1,16 +1,9 @@
+from flask import Flask, request, jsonify
 import random
 import google.generativeai as genai
 import os
-import sys
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['GRPC_VERBOSITY'] = 'ERROR'
-
-class NullWriter:
-    def write(self, x):
-        pass
-    def flush(self):
-        pass
+app = Flask(__name__)
 
 API_KEYS = [
     "AIzaSyD1Rs2JuNdnZTUex80swuXezs72mAhA6j4",
@@ -20,27 +13,24 @@ API_KEYS = [
     "AIzaSyCrH8NydtsubwAyxozz2CdjsK-kxFX81b8"
 ]
 
-print("Chat with LARSGPT! Type 'exit' to quit.")
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    user_input = data.get("prompt", "")
+    if not user_input:
+        return jsonify({"reply": "Bitte gib eine Nachricht ein."})
 
-while True:
-    user_input = input("You: ")
-    if user_input.lower() == 'exit':
-        print("Exiting chat...")
-        break
-    
     api_key = random.choice(API_KEYS)
+    genai.configure(api_key=api_key)
+
     try:
-        original_stderr = sys.stderr
-        sys.stderr = NullWriter()
-        
-        genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-2.0-flash")
-        chat = model.start_chat()
-        response = chat.send_message(user_input)
-        
-        sys.stderr = original_stderr
-        
-        print("LARSGPT:", response.text)
+        chat_session = model.start_chat()
+        response = chat_session.send_message(user_input)
+        return jsonify({"reply": response.text})
     except Exception as e:
-        sys.stderr = original_stderr
-        print("LARSGPT: Es tut mir leid, ich konnte keine Antwort generieren. Bitte versuchen Sie es erneut.")
+        return jsonify({"reply": "Fehler: konnte keine Antwort generieren."})
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
